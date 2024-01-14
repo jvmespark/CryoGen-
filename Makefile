@@ -3,7 +3,7 @@ BINS := $(SRCS:%.cpp=%)
 
 CC = g++ -std=c++17 -O2 -w
 COUNT = cloc
-LD_FLAGS = glad.c -ldl -lglfw -lz -lglut -lGL -lGLU 
+LD_FLAGS = glad.c -ldl -lglfw -lz -lglut -lGL -lGLU -lSDL2
 
 OBJ_NAME = main.exe
 
