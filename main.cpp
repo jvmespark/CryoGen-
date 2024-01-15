@@ -265,15 +265,13 @@ int main(int argc, char* argv[]) {
 	loadTextures();
 	initTransform();
 	
-	// get positon data as a msg
+	// TODO abstract away the networking api. in general i need to clean up all the code in this file
+	// send intial data
 	string x = to_string(camera.Position.x);
 	string y = to_string(camera.Position.y);
 	string z = to_string(camera.Position.z);
 	string msgStr = x + ',' + y + ',' + z;
-	char* msg = new char[msgStr.length() + 1]; 
-	strcpy(msg, msgStr.c_str());
-	std::cout<<msg<<std::endl;
-	send(clientSd, (char*)&msg, strlen(msg), 0);
+	send(clientSd, msgStr.data(), msgStr.size(), 0);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -283,19 +281,11 @@ int main(int argc, char* argv[]) {
 		lastFrame = currentTime;
 
 		// get network data
-		char msg[1500];
-		memset(&msg, 0, sizeof(msg));//clear the buffer
-		recv(newSd, (char*)&msg, sizeof(msg), 0); 
-		string posdata = std::string(msg);
+		std::string posdata;
+		char msg[256];
+		int n = recv(newSd, msg, sizeof(msg), 0);
+		posdata.append(msg, msg + n);
 		vector<float> posarr;
-
-		// TODO bug here with stof? it looks like the msg being recieved is non-readable?
-		/*
-		terminate called after throwing an instance of 'std::invalid_argument'
-		what():  stof
-		Aborted
-		*/
-		std::cout<<posdata<<std::endl;
 		std::string delimiter = ",";
 		size_t pos = 0;
 		std::string token;
@@ -312,6 +302,7 @@ int main(int argc, char* argv[]) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// TODO mouse is being processed when multiplayer? is that a WSL bug?
 		keysProcess();
 		bindTextures();
 		ourShader.Use();
@@ -328,12 +319,10 @@ int main(int argc, char* argv[]) {
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-		// no need to render own player model. we are represented as an enemy on their side too.
 		// stream position data into drawEnemy every frame
-		//drawEnemy(model, modelLoc, glm::vec3( dx,  0.0f,  0.0f));
 		drawEnemy(model, modelLoc, enemyPos);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		// ʹ����֮�������
+
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
@@ -354,14 +343,12 @@ bool keys[1024];
 
 void keysProcess()
 {
-	// get positon data as a msg
+	// send positon data
 	string x = to_string(camera.Position.x);
 	string y = to_string(camera.Position.y);
 	string z = to_string(camera.Position.z);
 	string msgStr = x + ',' + y + ',' + z;
-	char* msg = new char[msgStr.length() + 1]; 
-	strcpy(msg, msgStr.c_str());
-	send(clientSd, (char*)&msg, strlen(msg), 0);
+	send(clientSd, msgStr.data(), msgStr.size(), 0);
 
 	float cameraSpeed = 5.0f * deltaTime;
 
