@@ -9,3 +9,17 @@ An exercise in graphics, networking, and C++
 - [ ] decentralize with docker and github CI/CD
 - [ ] write documentation 
 - [ ] build out the map and mechanics  
+
+## usage
+```bash
+make build
+```
+as of development, here is the current way to start a game:  
+terminal one:  
+```bash
+./main.exe 8080 8081
+```
+terminal two:  
+```bash
+./main.exe 8081 8080
+```
