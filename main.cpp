@@ -10,6 +10,24 @@
 #include <vector>
 #include <iostream>
 
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/uio.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <fstream>
+using namespace std;
+
 #include "Shader.h"
 #include "Camera.h"
 #include "TextureManager.h"
@@ -127,10 +145,32 @@ void vboInit()
 	glEnableVertexAttribArray(2);
 }
 
+int port=8080;
+int newSd;
+
 void netInit() {
 	// get ports and ip from docker later
 	//int port = 8080;
 	//char* ip = "127.0.0.1";
+	sockaddr_in servAddr;
+    bzero((char*)&servAddr, sizeof(servAddr));
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servAddr.sin_port = htons(port);
+
+	int serverSd = socket(AF_INET, SOCK_STREAM, 0);
+    //bind the socket to its local address
+    int bindStatus = bind(serverSd, (struct sockaddr*) &servAddr, sizeof(servAddr));
+
+    //listen for up to 5 requests at a time
+    listen(serverSd, 5);
+    //receive a request from client using accept
+    //we need a new address to connect with the client
+    sockaddr_in newSockAddr;
+    socklen_t newSockAddrSize = sizeof(newSockAddr);
+    //accept, create a new socket descriptor to 
+    //handle the new connection with client
+    newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
 }
 
 // texture
@@ -192,15 +232,22 @@ int main(int argc, char* argv[])
 	loadTextures();
 	initTransform();
 	
+	float dx=0.0;
+
 	while (!glfwWindowShouldClose(window))
 	{
 		// calculate deltaTime
 		currentTime = glfwGetTime();
 		deltaTime = currentTime - lastFrame;
 		lastFrame = currentTime;
-	
-		char* msg = serverRead(8080);
-		std::cout<<msg<<std::endl;
+
+		// get network data
+		char msg[1500];
+		memset(&msg, 0, sizeof(msg));//clear the buffer
+		recv(newSd, (char*)&msg, sizeof(msg), 0); 
+		float x = atof(msg);
+		dx+=x;
+		std::cout<<dx<<std::endl;
 
 		// Start Render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -224,7 +271,7 @@ int main(int argc, char* argv[])
 
 		// no need to render own player model. we are represented as an enemy on their side too.
 		// stream position data into drawEnemy every frame
-		drawEnemy(model, modelLoc, glm::vec3( 0.0f,  0.0f,  0.0f));
+		drawEnemy(model, modelLoc, glm::vec3( dx,  0.0f,  0.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// ʹ����֮�������
 		glBindVertexArray(0);

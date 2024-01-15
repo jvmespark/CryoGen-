@@ -80,7 +80,7 @@ char* serverRead(int port) {
     int newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
     if (newSd < 0) {
         //Error accepting request from client!
-        return -3;
+        //return -3;
     }
     memset(&msg, 0, sizeof(msg));//clear the buffer
     recv(newSd, (char*)&msg, sizeof(msg), 0);
