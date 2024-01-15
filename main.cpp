@@ -8,21 +8,25 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <vector>
+#include <iostream>
 
 #include "Shader.h"
 #include "Camera.h"
 #include "TextureManager.h"
+#include "enemy.h"
+
+#include "networking/net.h"
 
 const GLuint WIDTH = 1280, HEIGHT = 720;
 
 // one cube vertices
 GLfloat vertices[] = {
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
@@ -58,19 +62,6 @@ GLfloat vertices[] = {
 	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
-// ten cube
-glm::vec3 cubePositions[] = {
-	glm::vec3( 0.0f,  0.0f,  0.0f),
-	glm::vec3( 2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3( 2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3( 1.3f, -2.0f, -2.5f),
-	glm::vec3( 1.5f,  2.0f, -2.5f),
-	glm::vec3( 1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
 void keysProcess();
@@ -123,7 +114,7 @@ void vboInit()
 {
 	// ���㻺�����vertex buffer objects, VBO)
 	glGenBuffers(1, &VBO);
-	// ���ƶ������鵽VBO��(�ṩ��OpenGLʹ��)
+	// ���ƶ������鵽VBO��(�ṩ��OpenGLʹ��)	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
@@ -134,6 +125,12 @@ void vboInit()
 	
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
+}
+
+void netInit() {
+	// get ports and ip from docker later
+	//int port = 8080;
+	//char* ip = "127.0.0.1";
 }
 
 // texture
@@ -155,36 +152,6 @@ void loadTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-/*
-	FreeImage_Initialise(TRUE);
-
-	FIBITMAP* bitmap;
-	unsigned char* bits;	
-	int w, h;
-
-	for (int i = 0; i < texCount; i++)
-	{
-		glGenTextures(1, &textures[i]);
-		glBindTexture(GL_TEXTURE_2D, textures[i]);
-		
-		bitmap = FreeImage_Load(FreeImage_GetFileType(images[i]), images[i], JPEG_DEFAULT);
-		bits = FreeImage_GetBits(bitmap);
-		w = FreeImage_GetWidth(bitmap);
-		h = FreeImage_GetHeight(bitmap);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, bits);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
-		FreeImage_Unload(bitmap);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-*/
 }
 
 void bindTextures()
@@ -212,15 +179,6 @@ void initTransform()
 	projLoc = glGetUniformLocation(ourShader.Program, "proj");
 }
 
-void updateTransform(int index)
-{
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, cubePositions[index]);
-	model = glm::rotate(model, glm::radians(GLfloat(glfwGetTime()) * 20.0f * (index + 1)), glm::vec3(1.0f, 0.3f, 0.5f));
-	
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-}
-
 // --- main code ---
 GLfloat currentTime = 0.0f, deltaTime = 0.0f, lastFrame = 0.0f;
 int main(int argc, char* argv[])
@@ -228,6 +186,7 @@ int main(int argc, char* argv[])
 	glInit();
 	vaoInit();
 	vboInit();
+	netInit();
 
 	ourShader = Shader("default.vs", "default.frag");
 	loadTextures();
@@ -240,6 +199,9 @@ int main(int argc, char* argv[])
 		deltaTime = currentTime - lastFrame;
 		lastFrame = currentTime;
 	
+		char* msg = serverRead(8080);
+		std::cout<<msg<<std::endl;
+
 		// Start Render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -260,11 +222,10 @@ int main(int argc, char* argv[])
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-		for (GLuint i = 0; i < 10; ++i)
-		{
-			updateTransform(i);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		// no need to render own player model. we are represented as an enemy on their side too.
+		// stream position data into drawEnemy every frame
+		drawEnemy(model, modelLoc, glm::vec3( 0.0f,  0.0f,  0.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// ʹ����֮�������
 		glBindVertexArray(0);
 
