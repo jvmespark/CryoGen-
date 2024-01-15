@@ -17,9 +17,13 @@ make build
 as of development, here is the current way to start a game:  
 terminal one:  
 ```bash
-./main.exe 8080 8081
+./main.exe insert_port1 insert_port2 inser_your_lan_ipv4
 ```
 terminal two:  
 ```bash
-./main.exe 8081 8080
+./main.exe insert_port2 insert_port1 insert_your_lan_ipv4
+```
+an example of a working boot:  
+```bash
+./main.exe 8080 8081 127.0.0.1
 ```

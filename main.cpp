@@ -149,7 +149,7 @@ int port=8080;
 int newSd;
 int clientSd;
 
-void netInit(int p1Port, int p2Port) {
+void netInit(int p1Port, int p2Port, char* serverIp) {
 
 	// get port from terminal argv, later switch to docker
 	// set up the server (p1)
@@ -179,7 +179,8 @@ void netInit(int p1Port, int p2Port) {
 
 	// handshake to client (p2), continue to try to connect to the other player
 	//setup a socket and connection tools 
-	char* serverIp = "127.0.0.1";
+	// todo get the local lan ipv4 address and make serverIp here
+	//char* serverIp = "127.0.0.1";
     struct hostent* host = gethostbyname(serverIp); 
     sockaddr_in sendSockAddr;   
     bzero((char*)&sendSockAddr, sizeof(sendSockAddr)); 
@@ -255,7 +256,8 @@ int main(int argc, char* argv[]) {
 	}
 	int p1Port = atoi(argv[1]);
 	int p2Port = atoi(argv[2]);
-	netInit(p1Port, p2Port);
+	char *serverIp = argv[3];
+	netInit(p1Port, p2Port, serverIp);
 
 	glInit();
 	vaoInit();
@@ -302,7 +304,8 @@ int main(int argc, char* argv[]) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// TODO mouse is being processed when multiplayer? is that a WSL bug?
+		// bug misconception: mouse is captured but only on 1 of the 2 games. this is not a bug, works as intended
+		// now i can have peace of mind
 		keysProcess();
 		bindTextures();
 		ourShader.Use();
