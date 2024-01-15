@@ -147,20 +147,28 @@ void vboInit()
 
 int port=8080;
 int newSd;
+int clientSd;
 
-void netInit() {
-	// get ports and ip from docker later
-	//int port = 8080;
-	//char* ip = "127.0.0.1";
+void netInit(int p1Port, int p2Port) {
+
+	// get port from terminal argv, later switch to docker
+	// set up the server (p1)
+	// handshake to client (p2)
+		// continue to try to connect to the other player
+	// once connnected, return success
+
 	sockaddr_in servAddr;
     bzero((char*)&servAddr, sizeof(servAddr));
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servAddr.sin_port = htons(port);
+    servAddr.sin_port = htons(p1Port);
 
 	int serverSd = socket(AF_INET, SOCK_STREAM, 0);
     //bind the socket to its local address
     int bindStatus = bind(serverSd, (struct sockaddr*) &servAddr, sizeof(servAddr));
+
+	// have a net close function after game ends
+	//close(clientSd);
 
     //listen for up to 5 requests at a time
     listen(serverSd, 5);
@@ -168,9 +176,28 @@ void netInit() {
     //we need a new address to connect with the client
     sockaddr_in newSockAddr;
     socklen_t newSockAddrSize = sizeof(newSockAddr);
-    //accept, create a new socket descriptor to 
+
+	// handshake to client (p2), continue to try to connect to the other player
+	//setup a socket and connection tools 
+	char* serverIp = "127.0.0.1";
+    struct hostent* host = gethostbyname(serverIp); 
+    sockaddr_in sendSockAddr;   
+    bzero((char*)&sendSockAddr, sizeof(sendSockAddr)); 
+    sendSockAddr.sin_family = AF_INET; 
+    sendSockAddr.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr*)*host->h_addr_list));
+    sendSockAddr.sin_port = htons(p2Port);
+    clientSd = socket(AF_INET, SOCK_STREAM, 0);
+    //try to connect...
+	int successfulConnnect = connect(clientSd, (sockaddr*) &sendSockAddr, sizeof(sendSockAddr));
+    while (successfulConnnect < 0) {
+		std::cout<<"Connecting ..."<<std::endl;
+		successfulConnnect = connect(clientSd, (sockaddr*) &sendSockAddr, sizeof(sendSockAddr));
+	}
+    cout << "Connected to the server!" << endl;
+
+	//accept, create a new socket descriptor to 
     //handle the new connection with client
-    newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
+	newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
 }
 
 // texture
@@ -221,18 +248,32 @@ void initTransform()
 
 // --- main code ---
 GLfloat currentTime = 0.0f, deltaTime = 0.0f, lastFrame = 0.0f;
-int main(int argc, char* argv[])
-{	
+int main(int argc, char* argv[]) {	
+	if (argc != 3) {
+		std::cerr<<"Needs p1Port and p2Port"<<std::endl;
+		exit(0);
+	}
+	int p1Port = atoi(argv[1]);
+	int p2Port = atoi(argv[2]);
+	netInit(p1Port, p2Port);
+
 	glInit();
 	vaoInit();
 	vboInit();
-	//netInit();
 
 	ourShader = Shader("default.vs", "default.frag");
 	loadTextures();
 	initTransform();
 	
-	float dx=0.0;
+	// get positon data as a msg
+	string x = to_string(camera.Position.x);
+	string y = to_string(camera.Position.y);
+	string z = to_string(camera.Position.z);
+	string msgStr = x + ',' + y + ',' + z;
+	char* msg = new char[msgStr.length() + 1]; 
+	strcpy(msg, msgStr.c_str());
+	std::cout<<msg<<std::endl;
+	send(clientSd, (char*)&msg, strlen(msg), 0);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -242,14 +283,30 @@ int main(int argc, char* argv[])
 		lastFrame = currentTime;
 
 		// get network data
-		/*
 		char msg[1500];
 		memset(&msg, 0, sizeof(msg));//clear the buffer
 		recv(newSd, (char*)&msg, sizeof(msg), 0); 
-		float x = atof(msg);
-		dx+=x;
-		std::cout<<dx<<std::endl;
+		string posdata = std::string(msg);
+		vector<float> posarr;
+
+		// TODO bug here with stof? it looks like the msg being recieved is non-readable?
+		/*
+		terminate called after throwing an instance of 'std::invalid_argument'
+		what():  stof
+		Aborted
 		*/
+		std::cout<<posdata<<std::endl;
+		std::string delimiter = ",";
+		size_t pos = 0;
+		std::string token;
+		while ((pos = posdata.find(delimiter)) != std::string::npos) {
+			token = posdata.substr(0, pos);
+			posarr.push_back(std::stof(token));
+			posdata.erase(0, pos + delimiter.length());
+		}
+		posarr.push_back(std::stof(posdata));
+
+		glm::vec3 enemyPos = glm::vec3(posarr[0],posarr[1],posarr[2]);
 
 		// Start Render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -273,7 +330,8 @@ int main(int argc, char* argv[])
 
 		// no need to render own player model. we are represented as an enemy on their side too.
 		// stream position data into drawEnemy every frame
-		drawEnemy(model, modelLoc, glm::vec3( dx,  0.0f,  0.0f));
+		//drawEnemy(model, modelLoc, glm::vec3( dx,  0.0f,  0.0f));
+		drawEnemy(model, modelLoc, enemyPos);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		// ʹ����֮�������
 		glBindVertexArray(0);
@@ -303,7 +361,7 @@ void keysProcess()
 	string msgStr = x + ',' + y + ',' + z;
 	char* msg = new char[msgStr.length() + 1]; 
 	strcpy(msg, msgStr.c_str());
-	//send(clientSd, (char*)&msg, strlen(msg), 0);
+	send(clientSd, (char*)&msg, strlen(msg), 0);
 
 	float cameraSpeed = 5.0f * deltaTime;
 
