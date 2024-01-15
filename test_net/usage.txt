@@ -7,3 +7,5 @@ g++ client.cpp -o client
 
 purpose:
 continously stream position data to the other player
+
+call streamsend in processkeyboard sending the new relevant data on the player to the other

@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
 	glInit();
 	vaoInit();
 	vboInit();
-	netInit();
+	//netInit();
 
 	ourShader = Shader("default.vs", "default.frag");
 	loadTextures();
@@ -242,12 +242,14 @@ int main(int argc, char* argv[])
 		lastFrame = currentTime;
 
 		// get network data
+		/*
 		char msg[1500];
 		memset(&msg, 0, sizeof(msg));//clear the buffer
 		recv(newSd, (char*)&msg, sizeof(msg), 0); 
 		float x = atof(msg);
 		dx+=x;
 		std::cout<<dx<<std::endl;
+		*/
 
 		// Start Render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -294,6 +296,15 @@ bool keys[1024];
 
 void keysProcess()
 {
+	// get positon data as a msg
+	string x = to_string(camera.Position.x);
+	string y = to_string(camera.Position.y);
+	string z = to_string(camera.Position.z);
+	string msgStr = x + ',' + y + ',' + z;
+	char* msg = new char[msgStr.length() + 1]; 
+	strcpy(msg, msgStr.c_str());
+	//send(clientSd, (char*)&msg, strlen(msg), 0);
+
 	float cameraSpeed = 5.0f * deltaTime;
 
 	if (keys[GLFW_KEY_ESCAPE])
@@ -301,6 +312,7 @@ void keysProcess()
 
 	if (keys[GLFW_KEY_W])
 		camera.ProcessKeyboard(FORWARD, deltaTime);
+
 	if (keys[GLFW_KEY_S])
 		camera.ProcessKeyboard(BACKWARD, deltaTime);
 	if (keys[GLFW_KEY_A])
