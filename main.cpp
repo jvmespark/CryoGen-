@@ -250,8 +250,8 @@ void initTransform()
 // --- main code ---
 GLfloat currentTime = 0.0f, deltaTime = 0.0f, lastFrame = 0.0f;
 int main(int argc, char* argv[]) {	
-	if (argc != 3) {
-		std::cerr<<"Needs p1Port and p2Port"<<std::endl;
+	if (argc != 4) {
+		std::cerr<<"Needs p1Port and p2Port and Ip"<<std::endl;
 		exit(0);
 	}
 	int p1Port = atoi(argv[1]);
