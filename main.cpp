@@ -33,8 +33,6 @@ using namespace std;
 #include "TextureManager.h"
 #include "enemy.h"
 
-#include "networking/net.h"
-
 const GLuint WIDTH = 1280, HEIGHT = 720;
 
 // one cube vertices
@@ -87,25 +85,21 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
-// opengl
 GLuint VAO, VBO;
 Shader ourShader;
 GLFWwindow* window;
 int screenWidth, screenHeight;
 
-void glInit ()
-{
+void glInit () {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "doom-like", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
-	//glewExperimental = GL_TRUE;
-	//glewInit();
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
 	glfwGetFramebufferSize(window, &screenWidth, &screenHeight);
@@ -116,30 +110,20 @@ void glInit ()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetKeyCallback(window, key_callback);
-
-	// �߿�����
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
-void vaoInit()
-{
-	// �����������Vertex Array Object, VAO��
+void vaoInit() {
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 }
 
-void vboInit()
-{
-	// ���㻺�����vertex buffer objects, VBO)
+void vboInit() {
 	glGenBuffers(1, &VBO);
-	// ���ƶ������鵽VBO��(�ṩ��OpenGLʹ��)	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// �����Ŷ����������ݵ�����
-	// ������Ҫ������һ����������, �������ԵĴ�С, ���ݵ�����, �Ƿ�ϣ�����ݱ���׼��, ������stride,�����Ķ�������֮�����ж���), λ�������ڻ�������ʼλ�õ�ƫ����
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), static_cast<GLvoid *>(nullptr));
-	glEnableVertexAttribArray(0); // ָ������Ҫ���õĶ����������������
+	glEnableVertexAttribArray(0);
 	
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
@@ -148,14 +132,14 @@ void vboInit()
 int port=8080;
 int newSd;
 int clientSd;
+int serverSd;
 
 void netInit(int p1Port, int p2Port, char* serverIp) {
-
 	// get port from terminal argv, later switch to docker
 	// set up the server (p1)
 	// handshake to client (p2)
 		// continue to try to connect to the other player
-	// once connnected, return success
+		// once connnected, accept the ping
 
 	sockaddr_in servAddr;
     bzero((char*)&servAddr, sizeof(servAddr));
@@ -163,12 +147,9 @@ void netInit(int p1Port, int p2Port, char* serverIp) {
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(p1Port);
 
-	int serverSd = socket(AF_INET, SOCK_STREAM, 0);
+	serverSd = socket(AF_INET, SOCK_STREAM, 0);
     //bind the socket to its local address
     int bindStatus = bind(serverSd, (struct sockaddr*) &servAddr, sizeof(servAddr));
-
-	// have a net close function after game ends
-	//close(clientSd);
 
     //listen for up to 5 requests at a time
     listen(serverSd, 5);
@@ -188,7 +169,8 @@ void netInit(int p1Port, int p2Port, char* serverIp) {
     sendSockAddr.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr*)*host->h_addr_list));
     sendSockAddr.sin_port = htons(p2Port);
     clientSd = socket(AF_INET, SOCK_STREAM, 0);
-    //try to connect...
+
+    // keep trying to connect
 	int successfulConnnect = connect(clientSd, (sockaddr*) &sendSockAddr, sizeof(sendSockAddr));
     while (successfulConnnect < 0) {
 		std::cout<<"Connecting ..."<<std::endl;
@@ -207,8 +189,7 @@ const int texCount = 2;
 char* images[texCount] = { "ok.png", "awesomeface.png" };
 GLuint textures[texCount];
 
-void loadTextures()
-{
+void loadTextures() {
 	TextureManager::Inst()->LoadTexture(images[0], 0, GL_RGBA, GL_RGBA, 0, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -222,8 +203,7 @@ void loadTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void bindTextures()
-{
+void bindTextures() {
 	glActiveTexture(GL_TEXTURE0);
 	TextureManager::Inst()->BindTexture(0);
 	glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture1"), 0);
@@ -240,18 +220,16 @@ glm::mat4 model, view, proj;
 GLuint modelLoc, viewLoc, projLoc;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-void initTransform()
-{
+void initTransform() {
 	modelLoc = glGetUniformLocation(ourShader.Program, "model");
 	viewLoc = glGetUniformLocation(ourShader.Program, "view");
 	projLoc = glGetUniformLocation(ourShader.Program, "proj");
 }
 
-// --- main code ---
 GLfloat currentTime = 0.0f, deltaTime = 0.0f, lastFrame = 0.0f;
 int main(int argc, char* argv[]) {	
 	if (argc != 4) {
-		std::cerr<<"Needs p1Port and p2Port and Ip"<<std::endl;
+		std::cerr<<"Needs p1Port, p2Port and ip"<<std::endl;
 		exit(0);
 	}
 	int p1Port = atoi(argv[1]);
@@ -267,7 +245,6 @@ int main(int argc, char* argv[]) {
 	loadTextures();
 	initTransform();
 	
-	// TODO abstract away the networking api. in general i need to clean up all the code in this file
 	// send intial data
 	string x = to_string(camera.Position.x);
 	string y = to_string(camera.Position.y);
@@ -275,8 +252,7 @@ int main(int argc, char* argv[]) {
 	string msgStr = x + ',' + y + ',' + z;
 	send(clientSd, msgStr.data(), msgStr.size(), 0);
 
-	while (!glfwWindowShouldClose(window))
-	{
+	while (!glfwWindowShouldClose(window)) {
 		// calculate deltaTime
 		currentTime = glfwGetTime();
 		deltaTime = currentTime - lastFrame;
@@ -297,20 +273,16 @@ int main(int argc, char* argv[]) {
 			posdata.erase(0, pos + delimiter.length());
 		}
 		posarr.push_back(std::stof(posdata));
-
 		glm::vec3 enemyPos = glm::vec3(posarr[0],posarr[1],posarr[2]);
 
 		// Start Render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// bug misconception: mouse is captured but only on 1 of the 2 games. this is not a bug, works as intended
-		// now i can have peace of mind
 		keysProcess();
 		bindTextures();
 		ourShader.Use();
 
-		// ����Ⱦ��VAO
 		glBindVertexArray(VAO);
 
 		view = glm::mat4(1.0f);
@@ -332,6 +304,11 @@ int main(int argc, char* argv[]) {
 		glfwPollEvents();
 	}
 
+	// close ports
+	close(clientSd);
+	close(newSd);
+	close(serverSd);
+
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 
@@ -344,8 +321,7 @@ int main(int argc, char* argv[]) {
 // input handle
 bool keys[1024];
 
-void keysProcess()
-{
+void keysProcess() {
 	// send positon data
 	string x = to_string(camera.Position.x);
 	string y = to_string(camera.Position.y);
@@ -360,7 +336,6 @@ void keysProcess()
 
 	if (keys[GLFW_KEY_W])
 		camera.ProcessKeyboard(FORWARD, deltaTime);
-
 	if (keys[GLFW_KEY_S])
 		camera.ProcessKeyboard(BACKWARD, deltaTime);
 	if (keys[GLFW_KEY_A])
@@ -391,8 +366,7 @@ bool firstMouse = true;
 GLfloat lastX = WIDTH / 2;
 GLfloat	lastY = HEIGHT / 2;
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 	if (firstMouse)
 	{
 		lastX = xpos;
@@ -408,15 +382,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	camera.ProcessMouseScroll(yoffset);
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
-	std::cout << key << std::endl;
-
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
 	if (action == GLFW_PRESS)
 		keys[key] = true;
 	else if (action == GLFW_RELEASE)
