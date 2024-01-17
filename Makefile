@@ -1,7 +1,7 @@
 OBJS := $(wildcard *.cpp)
 BINS := $(SRCS:%.cpp=%)
 
-CC = g++ -std=c++17 -O2 -w
+CC = g++ -w
 COUNT = cloc
 LD_FLAGS = glad.c -ldl -lglfw -lz -lglut -lGL -lGLU -lSDL2
 
