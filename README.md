@@ -9,6 +9,7 @@ An exercise in graphics, networking, and C++
 - [ ] decentralize with docker and github CI/CD
 - [ ] write documentation 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - [ ] build out the map and mechanics  
 
 ## usage
@@ -29,6 +30,9 @@ an example of a working boot:
 ./main.exe 8080 8081 127.0.0.1
 ```
 (note: currently lan support is still a work in progress, but it does run on local)
+=======
+- [ ] build out the map and mechanics  
+>>>>>>> parent of 8e49371... Merge pull request #1 from jvmespark/networking
 =======
 - [ ] build out the map and mechanics  
 >>>>>>> parent of 8e49371... Merge pull request #1 from jvmespark/networking

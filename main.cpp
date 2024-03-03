@@ -101,7 +101,7 @@ void glInit ()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "CryoGen", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	//glewExperimental = GL_TRUE;
@@ -117,29 +117,23 @@ void glInit ()
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetKeyCallback(window, key_callback);
 
-	// �߿�����
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void vaoInit()
 {
-	// �����������Vertex Array Object, VAO��
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 }
 
 void vboInit()
 {
-	// ���㻺�����vertex buffer objects, VBO)
 	glGenBuffers(1, &VBO);
-	// ���ƶ������鵽VBO��(�ṩ��OpenGLʹ��)	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// �����Ŷ����������ݵ�����
-	// ������Ҫ������һ����������, �������ԵĴ�С, ���ݵ�����, �Ƿ�ϣ�����ݱ���׼��, ������stride,�����Ķ�������֮�����ж���), λ�������ڻ�������ʼλ�õ�ƫ����
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), static_cast<GLvoid *>(nullptr));
-	glEnableVertexAttribArray(0); // ָ������Ҫ���õĶ����������������
+	glEnableVertexAttribArray(0); 
 	
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
@@ -259,7 +253,6 @@ int main(int argc, char* argv[])
 		bindTextures();
 		ourShader.Use();
 
-		// ����Ⱦ��VAO
 		glBindVertexArray(VAO);
 
 		view = glm::mat4(1.0f);
@@ -275,7 +268,6 @@ int main(int argc, char* argv[])
 		// stream position data into drawEnemy every frame
 		drawEnemy(model, modelLoc, glm::vec3( dx,  0.0f,  0.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		// ʹ����֮�������
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
@@ -297,13 +289,15 @@ bool keys[1024];
 void keysProcess()
 {
 	// get positon data as a msg
+	/*
 	string x = to_string(camera.Position.x);
 	string y = to_string(camera.Position.y);
 	string z = to_string(camera.Position.z);
 	string msgStr = x + ',' + y + ',' + z;
 	char* msg = new char[msgStr.length() + 1]; 
 	strcpy(msg, msgStr.c_str());
-	//send(clientSd, (char*)&msg, strlen(msg), 0);
+	send(clientSd, (char*)&msg, strlen(msg), 0);
+	*/
 
 	float cameraSpeed = 5.0f * deltaTime;
 
@@ -367,8 +361,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	std::cout << key << std::endl;
-
 	if (action == GLFW_PRESS)
 		keys[key] = true;
 	else if (action == GLFW_RELEASE)
