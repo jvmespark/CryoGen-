@@ -7,7 +7,7 @@ An exercise in graphics, networking, and C++
 - [x] add a player entity (make it a simple 3d cube to begin with)
 - [x] add networking
 - [ ] decentralize with docker and github CI/CD
-- [ ] write documentation 
+- [ ] write documentation.
 <<<<<<< HEAD
 - [ ] build out the map and mechanics  
 
