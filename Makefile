@@ -1,4 +1,4 @@
-OBJS := $(wildcard *.cpp)
+OBJS := $(wildcard *.cpp networking/*.cpp)
 BINS := $(SRCS:%.cpp=%)
 
 CC = g++ -std=c++17 -O2 -w
