@@ -6,7 +6,7 @@
 sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev libglfw3 libglfw3-dev make 
 ```
 - Download [GLAD](https://glad.dav1d.de/) with the following specifications:  
-    - C++, OpenGL, gl version of at least 3.3, profile core, generate a loader
+    - C++, OpenGL, gl version 4.6, profile core, generate a loader
     - Click Generate
     - Inside the zip file using WSL: cp -R include/* /usr/include/
 #### Note for Windows:  
