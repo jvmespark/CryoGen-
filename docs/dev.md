@@ -5,6 +5,10 @@
 ```bash
 sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev libglfw3 libglfw3-dev make 
 ```
+- Download [GLAD](https://glad.dav1d.de/) with the following specifications:  
+    - C++, OpenGL, gl version of at least 3.3, profile core, generate a loader
+    - Click Generate
+    - Inside the zip file using WSL: cp -R include/* /usr/include/
 #### Note for Windows:  
 Cryogen primarily runs on Linux, but Windows users can use WSL to run Cryogen, this will require a few extra steps for setup.  
 ##### Requirements:  
