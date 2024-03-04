@@ -38,6 +38,8 @@ public:
 	//free all texture memory
 	void UnloadAllTextures();
 
+	int nextTexId();
+
 protected:
 	TextureManager();
 	TextureManager(const TextureManager& tm);

@@ -179,3 +179,7 @@ void TextureManager::UnloadAllTextures()
 	//clear the texture map
 	m_texID.clear();
 }
+
+int TextureManager::nextTexId() {
+	return m_texID.size();
+}

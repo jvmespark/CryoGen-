@@ -8,4 +8,6 @@ void drawEnemy(glm::mat4 model, GLuint modelLoc, glm::vec3 position)
 	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
 
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 }

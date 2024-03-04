@@ -31,54 +31,10 @@ using namespace std;
 #include "graphics/shader.h"
 #include "objects/camera.h"
 #include "graphics/textureManager.h"
+#include "graphics/renderer.h"
 #include "objects/enemy.h"
 
 const GLuint WIDTH = 1280, HEIGHT = 720;
-
-// one cube vertices
-GLfloat vertices[] = {
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
 
 void keysProcess();
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -87,7 +43,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 // opengl
 GLuint VAO, VBO;
-Shader ourShader;
+Shader modelShader;
 GLFWwindow* window;
 int screenWidth, screenHeight;
 
@@ -99,7 +55,7 @@ void glInit ()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "CryoGen", nullptr, nullptr);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "Cryogen", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	//glewExperimental = GL_TRUE;
@@ -126,77 +82,9 @@ void vaoInit()
 
 void vboInit()
 {
+	// create 1 single vbo to store multiple objects
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), static_cast<GLvoid *>(nullptr));
-	glEnableVertexAttribArray(0); 
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
-}
-
-int port=8080;
-int newSd;
-
-void netInit() {
-	// get ports and ip from docker later
-	//int port = 8080;
-	//char* ip = "127.0.0.1";
-	sockaddr_in servAddr;
-    bzero((char*)&servAddr, sizeof(servAddr));
-    servAddr.sin_family = AF_INET;
-    servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servAddr.sin_port = htons(port);
-
-	int serverSd = socket(AF_INET, SOCK_STREAM, 0);
-    //bind the socket to its local address
-    int bindStatus = bind(serverSd, (struct sockaddr*) &servAddr, sizeof(servAddr));
-
-    //listen for up to 5 requests at a time
-    listen(serverSd, 5);
-    //receive a request from client using accept
-    //we need a new address to connect with the client
-    sockaddr_in newSockAddr;
-    socklen_t newSockAddrSize = sizeof(newSockAddr);
-    //accept, create a new socket descriptor to 
-    //handle the new connection with client
-    newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
-}
-
-// texture
-float texBlend = 1.0f;
-const int texCount = 2;
-char* images[texCount] = { "src/assets/images/ok.png", "src/assets/images/ascii.png" };
-GLuint textures[texCount];
-
-void loadTextures()
-{
-	TextureManager::Inst()->LoadTexture(images[0], 0, GL_RGBA, GL_RGBA, 0, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	TextureManager::Inst()->LoadTexture(images[1], 1, GL_RGB, GL_RGB, 0, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
-
-void bindTextures()
-{
-	glActiveTexture(GL_TEXTURE0);
-	TextureManager::Inst()->BindTexture(0);
-	glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture1"), 0);
-
-	glActiveTexture(GL_TEXTURE1);
-	TextureManager::Inst()->BindTexture(1);
-	glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture2"), 1);
-
-	glUniform1f(glGetUniformLocation(ourShader.Program, "texBlend"), texBlend);
 }
 
 // transform
@@ -206,25 +94,24 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 void initTransform()
 {
-	modelLoc = glGetUniformLocation(ourShader.Program, "model");
-	viewLoc = glGetUniformLocation(ourShader.Program, "view");
-	projLoc = glGetUniformLocation(ourShader.Program, "proj");
+	modelLoc = glGetUniformLocation(modelShader.Program, "model");
+	viewLoc = glGetUniformLocation(modelShader.Program, "view");
+	projLoc = glGetUniformLocation(modelShader.Program, "proj");
 }
 
-// --- main code ---
+
 GLfloat currentTime = 0.0f, deltaTime = 0.0f, lastFrame = 0.0f;
 int main(int argc, char* argv[])
 {	
 	glInit();
 	vaoInit();
 	vboInit();
-	//netInit();
 
-	ourShader = Shader("src/graphics/shaders/default.vs", "src/graphics/shaders/default.frag");
-	loadTextures();
+	modelShader = Shader("src/graphics/shaders/default.vs", "src/graphics/shaders/default.frag");
+	renderer* enemy1_renderer = new renderer(modelShader, "src/assets/images/ascii.png");
+	renderer* enemy2_renderer = new renderer(modelShader, "src/assets/images/ascii.png");
+	renderer* enemy3_renderer = new renderer(modelShader, "src/assets/images/ascii.png");
 	initTransform();
-	
-	float dx=0.0;
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -233,41 +120,30 @@ int main(int argc, char* argv[])
 		deltaTime = currentTime - lastFrame;
 		lastFrame = currentTime;
 
-		// get network data
-		/*
-		char msg[1500];
-		memset(&msg, 0, sizeof(msg));//clear the buffer
-		recv(newSd, (char*)&msg, sizeof(msg), 0); 
-		float x = atof(msg);
-		dx+=x;
-		std::cout<<dx<<std::endl;
-		*/
-
 		// Start Render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		keysProcess();
-		bindTextures();
-		ourShader.Use();
+		modelShader.Use();
 
 		glBindVertexArray(VAO);
 
+		// camera
 		view = glm::mat4(1.0f);
 		view = camera.GetViewMatrix();
-
 		proj = glm::mat4(1.0f);
 		proj = glm::perspective(camera.Zoom, float(screenWidth) / float(screenHeight), 0.1f, 100.0f);
-
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
+		
+		// render objects
+		enemy1_renderer->drawModel(glm::vec3( 0.0f,  0.0f,  0.0f), glm::vec3( 0.2f,  0.2f,  0.2f), 0, glm::vec3( 1.0f,  1.0f,  1.0f), 0, 2);
+		enemy2_renderer->drawModel(glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3( 0.5f,  0.5f,  0.5f), 0, glm::vec3( 1.0f,  1.0f,  1.0f), 3, 5);
+		enemy3_renderer->drawModel(glm::vec3( -1.0f,  -1.0f,  -1.0f), glm::vec3( 0.1f,  0.1f,  0.1f), 0, glm::vec3( 1.0f,  1.0f,  1.0f), 3, 5);
 
-		// no need to render own player model. we are represented as an enemy on their side too.
-		// stream position data into drawEnemy every frame
-		drawEnemy(model, modelLoc, glm::vec3( dx,  0.0f,  0.0f));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// bind to viewport
 		glBindVertexArray(0);
-
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -318,17 +194,6 @@ void keysProcess()
 	
 	if (keys[GLFW_KEY_L])
 		camera.FPS_Camera = !camera.FPS_Camera;
-
-	if (keys[GLFW_KEY_UP])
-	{
-		if (texBlend >= 1.0f) return;
-		texBlend += 0.01f;
-	}
-	if (keys[GLFW_KEY_DOWN])
-	{
-		if (texBlend <= 0.0f) return;
-		texBlend -= 0.01f;
-	}
 }
 
 bool firstMouse = true;
